@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>פותח שער חכם</title>
+
+  <!-- favicon – בכרטסת הדפדפן -->
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
+  <link rel="shortcut icon" href="icons/icon-192.png" />
+
+  <!-- apple touch icon – כששומרים על מסך הבית באייפון/אייפד -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- PWA manifest – התקנה במובייל -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#333333" />
+
+  <!-- Leaflet CSS/JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      direction: rtl;
+    }
+    h1 {
+      color: #333;
+      margin-top: 20px;
+    }
+    #map {
+      height: 400px;
+      width: 100%;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>פותח שער חכם</h1>
+  <p>העיגול האדום מייצג את אזור ההפעלה של השער.</p>
+  <div id="map"></div>
+  <button id="manualBtn">פתח את השער ידנית</button>
+  <script>
+    var gateCenter = [31.722123, 35.221289];
+    var gateRadius = 200;
+    var smsNumber = '+972504219565';
+    var smsText = 'OPEN';
+    var lastSent = false;
+
+    var map = L.map('map').setView(gateCenter, 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.circle(gateCenter, {
+      color: 'red',
+      fillColor: '#f03',
+      fillOpacity: 0.3,
+      radius: gateRadius
+    }).addTo(map);
+
+    var gateMarker = L.marker(gateCenter).addTo(map);
+    gateMarker.bindPopup('שער').openPopup();
+
+    var userMarker = L.marker(gateCenter).addTo(map);
+
+    function checkLocation(e) {
+      var userLatLng = [e.coords.latitude, e.coords.longitude];
+      userMarker.setLatLng(userLatLng);
+      var distance = map.distance(userLatLng, gateCenter);
+      var speed = e.coords.speed || 0;
+      if (distance <= gateRadius && speed <= 2.78 && !lastSent) {
+        window.open(`sms:${smsNumber}?&body=${smsText}`, '_blank');
+        lastSent = true;
+        var msg = new SpeechSynthesisUtterance('שלח הודעה');
+        msg.lang = 'he-IL';
+        window.speechSynthesis.speak(msg);
+      } else if (distance > gateRadius) {
+        lastSent = false;
+      }
+    }
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition(checkLocation);
+    } else {
+      alert('הדפדפן שלך לא תומך במיקום גיאוגרפי');
+    }
+
+    document.getElementById('manualBtn').addEventListener('click', function() {
+      window.open(`sms:${smsNumber}?&body=${smsText}`, '_blank');
+      var msg = new SpeechSynthesisUtterance('שלח הודעה');
+      msg.lang = 'he-IL';
+      window.speechSynthesis.speak(msg);
+    });
+  </script>
+</body>
+</html>
